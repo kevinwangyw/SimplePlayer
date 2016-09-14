@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="top_level_color">#000000</color>
+    <color name="tab_underline_color">#720707</color>
+    <color name="bar_color">#403f3f</color>
+    <color name="bottom_bar_color">#0c0c0c</color>
+    <color name="singer_color">#8c9192</color>
+    <color name="ringColor">#2d2e31</color>
+    <color name="wigdget_color">#BF444446</color>
+    <color name="normal_dot">#c0cab8</color>
+    <color name="enable_dot">#3f3433</color>
+    <color name="loginbackground">#dbdbdb</color>
+</resources>

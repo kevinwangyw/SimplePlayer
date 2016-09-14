@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="200dp"
+    android:layout_height="110dp"
+    android:background="@android:color/background_dark">
+
+    <RelativeLayout
+        android:id="@+id/play_layout"
+        android:layout_alignParentBottom="true"
+        android:background="@color/bottom_bar_color"
+        android:layout_width="match_parent"
+        android:layout_height="60dp">
+        <ImageView
+            android:id="@+id/cycle_mode_btn"
+            android:layout_alignParentRight="true"
+            android:layout_width="30dp"
+            android:layout_height="match_parent"
+            android:src="@mipmap/ic_action_playback_repeat"
+            android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"/>
+
+        <ImageView
+            android:id="@+id/next_btn"
+            android:layout_toLeftOf="@id/cycle_mode_btn"
+            android:src="@mipmap/ic_action_playback_next"
+            android:layout_width="30dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"/>
+
+        <ImageView
+            android:id="@+id/play_btn"
+            android:layout_toLeftOf="@id/next_btn"
+            android:layout_width="30dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:src="@mipmap/ic_action_playback_play"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"/>
+
+        <ImageView
+            android:id="@+id/prev_btn"
+            android:layout_toLeftOf="@id/play_btn"
+            android:layout_width="30dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:src="@mipmap/ic_action_playback_prev"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"/>
+
+        <TextView
+            android:id="@+id/music_title_text"
+            android:layout_alignParentLeft="true"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:textColor="@android:color/white"
+            android:textSize="18dp"
+            android:gravity="center"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"/>
+
+        <TextView
+            android:id="@+id/music_artist_text"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@id/music_title_text"
+            android:textColor="@color/singer_color"
+            android:textSize="15dp"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"
+            android:gravity="center"/>
+    </RelativeLayout>
+
+    <info.abdolahi.CircularMusicProgressBar
+        android:id="@+id/music_progress"
+        android:src="@drawable/cd01"
+        android:layout_above="@id/play_layout"
+        android:padding="60dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:border_color="@color/ringColor"
+        app:progress_startAngle="-90"
+        app:progress_color="@color/tab_underline_color"
+        app:centercircle_diammterer="1"
+        app:border_width="5dp"
+        />
+
+</RelativeLayout>
