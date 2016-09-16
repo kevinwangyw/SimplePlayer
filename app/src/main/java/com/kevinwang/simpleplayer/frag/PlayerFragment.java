@@ -13,7 +13,6 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,6 +31,7 @@ import com.kevinwang.simpleplayer.service.PlayMusicService;
 import com.kevinwang.simpleplayer.widget.MusicWidgetProvider;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import info.abdolahi.CircularMusicProgressBar;
 
@@ -62,7 +62,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
     private SharedPreferences mSharedPreferences;
     private static TextView mTitle;
     private static TextView mArtist;
-    private Messenger playFragMessenger = new Messenger(new PlayFragHandler());
+    private static Messenger playFragMessenger = null;
 
     public static PlayerFragment newInstance() {
         PlayerFragment fragment = new PlayerFragment();
@@ -76,12 +76,15 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         Log.i(PLAYER_FRAGMENT, "onCreate()");
         super.onCreate(savedInstanceState);
+        playFragMessenger = new Messenger(new PlayFragHandler(getActivity()));
+
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
         PlayStateHelper.setJustStart(true);
         PlayStateHelper.setCurPos(mSharedPreferences.getInt(CURRENT_POS, -1));
         PlayStateHelper.setMode(mSharedPreferences.getInt(PLAY_MODE, 0));     //3种模式 0:列表循环，1:单曲循环，2:随机播放
         PlayStateHelper.setPlayState(0);  //0: 音乐未播放（图标显示play），1：正在播放（图标显示pause）
+        Log.e(PLAYER_FRAGMENT, "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
 
         mode_img_src = new int[]{R.mipmap.ic_action_playback_repeat, R.mipmap.ic_action_playback_repeat_1, R.mipmap
                 .ic_action_playback_schuffle};
@@ -197,7 +200,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
     }
 
     private void requestSetMusicSrc(Messenger musicServiceMessenger, int whatOperation, int whichBtnClicked) {
-        String path = musics.get(PlayStateHelper.getCurPos()).getPath();
+        String path = MusicLab.getsMusicLab(getActivity()).getmMusicItem().get(PlayStateHelper.getCurPos()).getPath();
 
         Message msg = Message.obtain();
         msg.what = PlayMusicService.SET_MUSIC_SRC;
@@ -227,14 +230,14 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
             } else {
                 PlayStateHelper.setCurPos(PlayStateHelper.getCurPos() - 1);
             }
-            Log.i("next_btn_Click", "curPos is " + PlayStateHelper.getCurPos());
+            Log.i("pre_music_operation", "curPos is " + PlayStateHelper.getCurPos());
         } else {
             if (PlayStateHelper.getCurPos() == (musics.size() - 1)) {
                 PlayStateHelper.setCurPos(0);
             } else {
                 PlayStateHelper.setCurPos(PlayStateHelper.getCurPos() + 1);
             }
-            Log.i("next_btn_Click", "curPos is " + PlayStateHelper.getCurPos());
+            Log.i("next_music_operation", "curPos is " + PlayStateHelper.getCurPos());
         }
 
         mCircularMusicProgressBar.setValue(0);
@@ -311,18 +314,17 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
         super.onDestroy();
     }
 
-    public static class PlayReceiver extends BroadcastReceiver {
+    public class PlayReceiver extends BroadcastReceiver {
         public static final String UPDATE_PLAY_FRAG_VIEW = "com.kevinwangyw.simpleplayer.PlayerFragment" +
                 ".update_play_frag_view";
         public static final String UPDATE_FROM_WIDGET = "com.kevinwangyw.simpleplayer.PlayerFragment" +
                 ".update_from_widget";
-
-
-        private MediaMetadataRetriever mRetriever;
+        public static final String UPDATE_FROM_NOTIFICATION = "com.kevinwangyw.simpleplayer.PlayerFragment" +
+                "update_from_notification";
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            ArrayList<MusicItem> container = MusicLab.getsMusicLab(context).getmMusicItem();
+            ArrayList<MusicItem> musics = MusicLab.getsMusicLab(context).getmMusicItem();
             if (intent != null) {
                 if (TextUtils.equals(intent.getAction(), UPDATE_PLAY_FRAG_VIEW)) {
                     int mCurPos = PlayStateHelper.getCurPos();
@@ -330,26 +332,53 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                         //0表示正在播放，1表示播放完毕, 2表示改变进度条,
                         case 0:
                             Log.i(PLAYER_FRAGMENT, "onReceive case " + 0);
+                            Log.i(PLAYER_FRAGMENT, "cur pos in list is " + mCurPos);
                             PlayStateHelper.setPlayState(1);
-                            updateFrag(container, mCurPos);
+                            updateFrag(musics, mCurPos);
                             break;
                         case 1:
                             Log.i(PLAYER_FRAGMENT, "onReceive case " + 1);
-                            PlayStateHelper.setPlayState(1);
-                            updateFrag(container, mCurPos);
+                            Messenger musicServiceMessenger = MainActivity.getMusicServiceMessenger();
+                            int curPos = PlayStateHelper.getCurPos();
+                            int size = musics.size();
+
+                            if (size != 0) {
+                                switch (PlayStateHelper.getMode()) {  //3种模式 0:列表循环，1:单曲循环，2:随机播放
+                                    case 0:
+                                        if (++curPos > (size - 1)) {
+                                            curPos = 0;
+                                        }
+                                        break;
+                                    case 1:  //位置不变
+                                        break;
+                                    case 2:
+                                        Random random = new Random();
+                                        curPos = random.nextInt(size);
+                                        break;
+                                }
+                                PlayStateHelper.setCurPos(curPos);
+                                requestSetMusicSrc(musicServiceMessenger, SET_PRE_OR_NEXT, 1);
+                            } else {
+                                PlayStateHelper.setCurPos(-1);
+                            }
+
+                            Log.i(PLAYER_FRAGMENT, "cur pos in list is " + mCurPos);
+
+                            PlayStateHelper.setPlayState(1);  //0: 音乐未播放（图标显示play），1：正在播放（图标显示pause）
+                            updateFrag(musics, mCurPos);
                             break;
                         case 2:
                             Log.i(PLAYER_FRAGMENT, "onReceive case " + 2);
+                            Log.i(PLAYER_FRAGMENT, "cur pos in list is " + mCurPos);
                             float progress = intent.getFloatExtra("progress", 0);
                             mCircularMusicProgressBar.setValue(progress);
                             break;
                         case 3:
                             Log.i(PLAYER_FRAGMENT, "onReceive case " + 3);
-                            updateFrag(container, mCurPos);
+                            updateFrag(musics, mCurPos);
                             break;
                     }
                 } else if (TextUtils.equals(intent.getAction(), UPDATE_FROM_WIDGET)) {
-                    LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context);
                     Intent updateWidgetIntent = new Intent();
                     updateWidgetIntent.setAction(MusicWidgetProvider.WIDGET_ACTION);
                     switch (intent.getIntExtra("widget_operation", 0)) {  //4:next 5:pre 6:play
@@ -361,9 +390,20 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                             break;
                         case 6:
                             Log.i("PlayReceiver", "onReceive, case play");
-
                             mPlay_btn.setImageResource(play_state_img[PlayStateHelper.getPlayState()]);
-
+                            break;
+                    }
+                } else if (TextUtils.equals(intent.getAction(), UPDATE_FROM_NOTIFICATION)) {
+                    switch (intent.getIntExtra("notification_operation", 0)) {  //4:next 5:pre 6:play
+                        case 4:
+                            Log.i("PlayReceiver", "onReceive, case next");
+                            break;
+                        case 5:
+                            Log.i("PlayReceiver", "onReceive, case pre");
+                            break;
+                        case 6:
+                            Log.i("PlayReceiver", "onReceive, case play");
+                            mPlay_btn.setImageResource(play_state_img[PlayStateHelper.getPlayState()]);
                             break;
                     }
                 }
@@ -372,6 +412,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
 
         private void updateFrag(ArrayList<MusicItem> container, int mCurPos) {  //点击音乐文件列表时更新播放界面
             if (mCurPos != -1) {
+                Log.i("updateFrag", "current music pos in list is " + mCurPos);
                 mTitle.setText(container.get(mCurPos).getName());
                 mArtist.setText(container.get(mCurPos).getSinger());
 
@@ -393,13 +434,16 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-    public PlayReceiver getPlayReceiver() {
-        return new PlayReceiver();
-    }
-
     private class PlayFragHandler extends Handler {
+        private Context mContext;
+
+        PlayFragHandler(Context context) {
+            mContext = context;
+        }
+
         @Override
         public void handleMessage(Message msg) {
+            ArrayList<MusicItem> musics = MusicLab.getsMusicLab(mContext).getmMusicItem();
             Bundle data = msg.getData();
             Messenger musicServiceMessenger = MainActivity.getMusicServiceMessenger();
             Boolean setSrcSuccess = data.getBoolean(SET_SRC_SUCCESS);
@@ -457,7 +501,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
             Intent intent = new Intent();
             intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
             intent.putExtra("operation", data.getInt(WHICH_BTN_CLICKED)); //0:play 1:pre 2:next
-            getActivity().sendBroadcast(intent);
+            mContext.sendBroadcast(intent);
         }
 
         private void startMusic(Messenger musicServiceMessenger) {

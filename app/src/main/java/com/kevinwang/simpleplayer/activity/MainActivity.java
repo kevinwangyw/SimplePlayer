@@ -70,16 +70,11 @@ public class MainActivity extends AppCompatActivity {
         TabPageIndicator indicator = (TabPageIndicator)findViewById(R.id.tab_title);
         indicator.setViewPager(mViewPager);
 
-        mIntent = new Intent(this, PlayMusicService.class);
-        this.startService(mIntent);
-        this.bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE);
-        Log.i("after bindService", "musciServiceMessenger == null is " + (musciServiceMessenger == null));
-
-
-        mPlayReceiver = new PlayerFragment.PlayReceiver();
+        mPlayReceiver = (PlayerFragment.newInstance()).new PlayReceiver();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(PlayerFragment.PlayReceiver.UPDATE_PLAY_FRAG_VIEW);
         intentFilter.addAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
+        intentFilter.addAction(PlayerFragment.PlayReceiver.UPDATE_FROM_NOTIFICATION);
         registerReceiver(mPlayReceiver, intentFilter);
 
         mWidgetReceiver = new MusicWidgetProvider();
@@ -89,6 +84,11 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(MusicWidgetProvider.ACTION_BUTTON_NEXT);
         intentFilter.addAction(MusicWidgetProvider.WIDGET_ACTION);
         registerReceiver(mWidgetReceiver, intentFilter);
+
+        mIntent = new Intent(this, PlayMusicService.class);
+        startService(mIntent);
+        bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE);
+        Log.i("after bindService", "musciServiceMessenger == null is " + (musciServiceMessenger == null));
     }
 
     class TabPagerAdapter extends FragmentPagerAdapter implements IconPagerAdapter {

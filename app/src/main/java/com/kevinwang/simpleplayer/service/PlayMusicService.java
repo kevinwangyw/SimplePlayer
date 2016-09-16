@@ -13,16 +13,12 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.kevinwang.simpleplayer.bean.MusicItem;
-import com.kevinwang.simpleplayer.bean.MusicLab;
 import com.kevinwang.simpleplayer.frag.FileChooseFragment;
 import com.kevinwang.simpleplayer.frag.PlayerFragment;
 import com.kevinwang.simpleplayer.helper.PlayStateHelper;
 import com.kevinwang.simpleplayer.widget.MusicWidgetProvider;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -180,8 +176,8 @@ public class PlayMusicService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.i(PLAY_MUSIC_SERVICE, "onCreate()");
-
-        mPlayReceiver = new PlayerFragment.PlayReceiver();
+        Log.e(PLAY_MUSIC_SERVICE, "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
+        mPlayReceiver = PlayerFragment.newInstance().new PlayReceiver();
         mWidgetReceiver = new MusicWidgetProvider();
 
         mCurPlayPos = 0;
@@ -190,42 +186,11 @@ public class PlayMusicService extends Service {
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
                 mTimer.cancel();
-                ArrayList<MusicItem> musics = MusicLab.getsMusicLab(getApplicationContext()).getmMusicItem();
-                int curPos = PlayStateHelper.getCurPos();
-                int size = musics.size();
                 mMediaPlayer.reset();
-                switch (PlayStateHelper.getMode()) {  //3种模式 0:列表循环，1:单曲循环，2:随机播放
-                    case 0:
-                        if (++curPos > (size - 1)) {
-                            curPos = 0;
-                        }
-                        break;
-                    case 1:  //位置不变
-                        break;
-                    case 2:
-                        Random random = new Random();
-                        curPos = random.nextInt(size);
-                        break;
-                }
-                Log.e("onCompletion", "local varaiable curPos is " + curPos);
-                Log.e("onCompletion", "PlayStateHelper().getCurPos return " + curPos);
-                Log.e("onCompletion", "Music library size is " + musics.size());
-                if (musics.size() != 0) {
-                    PlayStateHelper.setCurPos(curPos);
-                    setMusicSrc(musics.get(curPos).getPath());
-                }else {
-                    PlayStateHelper.setCurPos(-1);
-                    mTimer.cancel();
-                }
-                startMusic();
 
                 Intent intent = new Intent();
                 intent.setAction(PlayerFragment.PlayReceiver.UPDATE_PLAY_FRAG_VIEW);
                 intent.putExtra("playing_state", 1); //0表示正在播放，1表示播放完毕, 2表示改变进度条
-                sendBroadcast(intent);
-                intent = new Intent();
-                intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
-                intent.putExtra("operation", 2); //0:play 1:pre 2:next
                 sendBroadcast(intent);
             }
         });
@@ -236,19 +201,21 @@ public class PlayMusicService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(PLAY_MUSIC_SERVICE, "onStartCommand()");
-
+        Log.e(PLAY_MUSIC_SERVICE, "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
         return START_NOT_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.i(PLAY_MUSIC_SERVICE, "onOnBinde()");
+        Log.i(PLAY_MUSIC_SERVICE, "onOnBind()");
+        Log.e(PLAY_MUSIC_SERVICE, "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
         return musciServiceMessenger.getBinder();
     }
 
     @Override
     public void onDestroy() {
         Log.i(PLAY_MUSIC_SERVICE, "onDestroy()");
+        Log.e(PLAY_MUSIC_SERVICE, "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.stop();
             mTimer.cancel();
@@ -264,6 +231,7 @@ public class PlayMusicService extends Service {
 
     public boolean setMusicSrc(String path) {
         Log.i(PLAY_MUSIC_SERVICE, "setMusicSrc()--> the path is " + path);
+        Log.i(PLAY_MUSIC_SERVICE, "setMusicSrc()--> the curPos in list is " + PlayStateHelper.getCurPos());
         if (mMediaPlayer.isPlaying() || mCurPlayPos != 0 ) {  //第二个判断条件是用于当前音乐暂停，需要重新设置新音乐的情况
             mTimer.cancel();
             mMediaPlayer.stop();
@@ -343,7 +311,7 @@ public class PlayMusicService extends Service {
     private class Progress extends TimerTask {
         @Override
         public void run() {
-            Log.e(PLAY_MUSIC_SERVICE, "TimerTask used getDuration");
+            Log.i(PLAY_MUSIC_SERVICE, "TimerTask used getDuration");
             float progress = 100 * ((float)getCurrentPos() / (float) mMediaPlayer.getDuration());
             Intent intent = new Intent();
             intent.setAction(PlayerFragment.PlayReceiver.UPDATE_PLAY_FRAG_VIEW);

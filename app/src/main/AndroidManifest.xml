@@ -26,6 +26,8 @@
             android:process="com.kevinwangy.simpleplayer.service"
         />
 
+        <service android:name=".service.NotificationService"/>
+
         <receiver
             android:name=".widget.MusicWidgetProvider"
             android:exported="true"

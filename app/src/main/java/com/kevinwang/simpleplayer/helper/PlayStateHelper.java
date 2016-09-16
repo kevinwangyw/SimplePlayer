@@ -1,5 +1,7 @@
 package com.kevinwang.simpleplayer.helper;
 
+import android.util.Log;
+
 import java.util.concurrent.TimeUnit;
 
 public class PlayStateHelper {
@@ -30,6 +32,7 @@ public class PlayStateHelper {
     }
 
     public static void setCurPos(int curPos) {
+        Log.e("PlayStateHelper", "setCurePos-->parameter curPos == " + curPos);
         PlayStateHelper.curPos = curPos;
     }
 

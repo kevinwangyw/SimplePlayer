@@ -68,7 +68,7 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         Messenger musicServiceMessenger = MainActivity.getMusicServiceMessenger();
 
         mRemoteViews = new RemoteViews(context.getPackageName(), R.layout.widget_layout);
-        PlayerFragment.PlayReceiver playReceiver = new PlayerFragment.PlayReceiver();
+        PlayerFragment.PlayReceiver playReceiver = (PlayerFragment.newInstance()).new PlayReceiver();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context);

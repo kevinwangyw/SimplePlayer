@@ -75,7 +75,8 @@ public class FileChooseFragment extends Fragment {
 
     private void requestSetMusicSrc(Messenger musicServiceMessenger, int whatOperation) {
         String path = mMusics.get(PlayStateHelper.getCurPos()).getPath();
-        Log.i("requestSetMusicSrc", "the path is " + path);
+        Log.e("requestSetMusicSrc", "PlayStateHelper.getCurPos() == " + PlayStateHelper.getCurPos());
+        Log.e("requestSetMusicSrc", "the path is " + path);
 
         Message msg = Message.obtain();
         msg.what = PlayMusicService.SET_MUSIC_SRC;
@@ -132,7 +133,7 @@ public class FileChooseFragment extends Fragment {
                     }
                 }
 
-                Log.i("ListViewItemClick", "current position is " + mCurPos);
+                Log.e("ListViewItemClick", "current position is " + PlayStateHelper.getCurPos());
             }
         });
     }
