@@ -47,9 +47,9 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
     public static final String WHICH_COMPONENT = "whichFrag";
     public static final String PATH = "path";
     public static final String SET_SRC_SUCCESS = "setSrcSuccess";
-    public static final int PLAY_BTN_CLICKED = 1;
-    public static final int PRE_BTN_CLICKED = 2;
-    public static final int NEXT_BTN_CLICKED = 3;
+    public static final int PLAY_BTN_CLICKED = 0;
+    public static final int PRE_BTN_CLICKED = 1;
+    public static final int NEXT_BTN_CLICKED = 2;
     public static final String WHICH_BTN_CLICKED = "whichBtnClicked";
     private static CircularMusicProgressBar mCircularMusicProgressBar;
     private static ImageView mPre_btn;
@@ -174,28 +174,40 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
         mPlayState = (++mPlayState) % 2;
         PlayStateHelper.setPlayState(mPlayState);
         mPlay_btn.setImageResource(play_state_img[mPlayState]);
-        Log.i("ListViewItemClick", "是否刚启动：" + PlayStateHelper.isJustStart());
+        Log.i("play_btn_operation", "点击PlayerFragment的播放按钮-->是否刚启动：" + PlayStateHelper.isJustStart());
+        Log.e("play_btn_operation", "PlayStateHelper.getPlayState() == " + PlayStateHelper.getPlayState());
         Message msgToService = Message.obtain();
         if (mPlayState == 1) {
             if (PlayStateHelper.isJustStart()) {
                 requestSetMusicSrc(musicServiceMessenger, PLAY_BTN_OPERATION, whichBtnClicked);
             } else {
                 msgToService.what = PlayMusicService.RESUME_MUSIC;
+                Intent intent = new Intent();
+                intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
+                intent.putExtra("operation", 0); //0:play 1:pre 2:next
+                getActivity().sendBroadcast(intent);
                 try {
+                    Log.e("play_btn_operation", "向service发送消息-->RESUME_MUSIC");
                     musicServiceMessenger.send(msgToService);
                 } catch (RemoteException e) {
                     e.printStackTrace();
-                    Log.e("setPreOrNext", "向service发送消息失败");
+                    Log.e("play_btn_operation", "向service发送消息失败");
                 }
+                PlayStateHelper.isPlaying = true;
             }
         } else {
             msgToService.what = PlayMusicService.PAUSE_MUSIC;
+            Intent intent = new Intent();
+            intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
+            intent.putExtra("operation", 0); //0:play 1:pre 2:next
+            getActivity().sendBroadcast(intent);
             try {
                 musicServiceMessenger.send(msgToService);
             } catch (RemoteException e) {
                 e.printStackTrace();
                 Log.e("setPreOrNext", "向service发送消息失败");
             }
+            PlayStateHelper.isPlaying = false;
         }
     }
 
@@ -212,6 +224,8 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
         msg.replyTo = playFragMessenger;
         msg.setData(data);
         try {
+            Log.e("play_btn_operation", "向service发送消息-->SET_MUSIC_SRC");
+            Log.e("play_btn_operation", "向service发送消息-->whichBtnClicked == " + whichBtnClicked);
             musicServiceMessenger.send(msg);
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -324,7 +338,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            ArrayList<MusicItem> musics = MusicLab.getsMusicLab(context).getmMusicItem();
+            musics = MusicLab.getsMusicLab(context).getmMusicItem();
             if (intent != null) {
                 if (TextUtils.equals(intent.getAction(), UPDATE_PLAY_FRAG_VIEW)) {
                     int mCurPos = PlayStateHelper.getCurPos();
@@ -384,9 +398,11 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                     switch (intent.getIntExtra("widget_operation", 0)) {  //4:next 5:pre 6:play
                         case 4:
                             Log.i("PlayReceiver", "onReceive, case next");
+                            //setPreOrNext(1, MainActivity.getMusicServiceMessenger(), NEXT_BTN_CLICKED);
                             break;
                         case 5:
                             Log.i("PlayReceiver", "onReceive, case pre");
+                            //setPreOrNext(0, MainActivity.getMusicServiceMessenger(), PRE_BTN_CLICKED);
                             break;
                         case 6:
                             Log.i("PlayReceiver", "onReceive, case play");
@@ -451,6 +467,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                 case SET_PRE_OR_NEXT:
                     Log.i("PlayFragHandler", "case SET_PRE_OR_NEXT");
                     if (setSrcSuccess) {
+
                         PlayStateHelper.setJustStart(false);
                         mTitle.setText(musics.get(PlayStateHelper.getCurPos()).getName());
                         mArtist.setText(musics.get(PlayStateHelper.getCurPos()).getSinger());
@@ -497,7 +514,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
         }
 
         private void sendBroadCastToWidget(Bundle data) {
-            Log.i("PlayFragHandler", "sendBroadCastToWidget");
+            Log.e("PlayFragHandler", "sendBroadCastToWidget-->WHICH_BTN_CLICKED == " + data.getInt(WHICH_BTN_CLICKED));
             Intent intent = new Intent();
             intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
             intent.putExtra("operation", data.getInt(WHICH_BTN_CLICKED)); //0:play 1:pre 2:next
@@ -508,6 +525,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
             Log.i("PlayFragHandler", "case PLAY_BTN_OPERATION--->startMusic, musicServiceMessenger == null is " + (musicServiceMessenger == null));
             Message msgToService = Message.obtain();
             msgToService.what = PlayMusicService.START_MUSIC;
+            PlayStateHelper.isPlaying = true;
             try {
                 musicServiceMessenger.send(msgToService);
             } catch (RemoteException e) {

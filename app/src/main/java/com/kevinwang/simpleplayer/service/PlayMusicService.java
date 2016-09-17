@@ -38,7 +38,7 @@ public class PlayMusicService extends Service {
     private final IBinder mPlayBinder = new PlayBinder();
     private MediaPlayer mMediaPlayer;
     private boolean srcFound;
-    private int mCurPlayPos;
+    private static int mCurPlayPos;
     private PlayerFragment.PlayReceiver mPlayReceiver;
     private Timer mTimer;
     private MusicWidgetProvider mWidgetReceiver;
@@ -68,16 +68,32 @@ public class PlayMusicService extends Service {
                             msgToPlayFrag.what = PlayerFragment.PLAY_BTN_OPERATION;
                         }
                         try {
-                            Log.i("SET_MUSIC_SRC", "发送信息给PlayFragment");
+                            Log.i("SET_MUSIC_SRC", "发送信息给Fragment");
                             playFragMessenger.send(msgToPlayFrag);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                             Log.e("PlayMusicService", "case SET_MUSIC_SRC-->发送消息给PlayerFragment失败");
                         }
                     } else if (TextUtils.equals(data.getString(PlayerFragment.WHICH_COMPONENT), MusicWidgetProvider.WIDGET)){
-                        setMusicSrc(data.getString(PlayerFragment.PATH));
+                        Messenger widgetMessenger = msg.replyTo;
                         startMusic();
                         PlayStateHelper.isPlaying = true;
+                        Message msgToWidget = Message.obtain();
+                        switch (data.getInt(PlayerFragment.WHICH_BTN_CLICKED)){
+                            case PlayerFragment.PLAY_BTN_CLICKED:
+                                break;
+                            case PlayerFragment.NEXT_BTN_CLICKED:
+                                msgToWidget.what =  MusicWidgetProvider.NEXT_BTN;
+                                break;
+                            case PlayerFragment.PRE_BTN_CLICKED:
+                                msgToWidget.what = MusicWidgetProvider.PRE_BTN;
+                                break;
+                        }
+                        try {
+                            widgetMessenger.send(msgToWidget);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
                     } else {
                         fileFragMessenger = msg.replyTo;
                         Message msgToFileFrag = Message.obtain();
@@ -231,15 +247,15 @@ public class PlayMusicService extends Service {
 
     public boolean setMusicSrc(String path) {
         Log.i(PLAY_MUSIC_SERVICE, "setMusicSrc()--> the path is " + path);
-        Log.i(PLAY_MUSIC_SERVICE, "setMusicSrc()--> the curPos in list is " + PlayStateHelper.getCurPos());
-        if (mMediaPlayer.isPlaying() || mCurPlayPos != 0 ) {  //第二个判断条件是用于当前音乐暂停，需要重新设置新音乐的情况
+        if (mMediaPlayer.isPlaying()) {
+            Log.e(PLAY_MUSIC_SERVICE, "setMusicSrc()-->用于当前音乐正在播放，需要重新设置新音乐的情况");
             mTimer.cancel();
-            mMediaPlayer.stop();
-            mMediaPlayer.reset();  //用release方法不行
-            Log.i("After reset", "mMediaPlayer == null return " + String.valueOf(mMediaPlayer == null));
-            srcFound = false;
-            PlayStateHelper.isPlaying = false;
         }
+        mMediaPlayer.stop();
+        mMediaPlayer.reset();  //用release方法不行
+        Log.i("After reset", "mMediaPlayer == null return " + String.valueOf(mMediaPlayer == null));
+        srcFound = false;
+        PlayStateHelper.isPlaying = false;
         try {
             mCurPlayPos = 0;
             mMediaPlayer.setDataSource(path);
@@ -270,9 +286,9 @@ public class PlayMusicService extends Service {
     }
 
     public void pauseMusic () {
-        Log.i(PLAY_MUSIC_SERVICE, "pauseMusic()");
-        mCurPlayPos = mMediaPlayer.getCurrentPosition();
+        Log.i(PLAY_MUSIC_SERVICE, "pauseMusic()--->mMediaPlayer.getCurrentPosition() == " + mMediaPlayer.getCurrentPosition());
         mMediaPlayer.pause();
+        mCurPlayPos = mMediaPlayer.getCurrentPosition();
         mTimer.cancel();
     }
 

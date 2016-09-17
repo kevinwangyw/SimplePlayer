@@ -127,6 +127,7 @@ public class FileChooseFragment extends Fragment {
                                 e.printStackTrace();
                                 Log.e("onItemClick", "resume music, 向service发送消息失败");
                             }
+                            PlayStateHelper.isPlaying = true;
                             updateWidget();
                             sendMusicPlayState(0);
                         }
@@ -289,9 +290,11 @@ public class FileChooseFragment extends Fragment {
                                                     PlayStateHelper.setCurPos(mCurPos);
                                                 }
                                                 requestSetMusicSrc(musicServiceMessenger, RESPONSE1);
+                                                PlayStateHelper.isPlaying = true;
                                             } else {
                                                 //删除之后无音乐
                                                 noMusicAfterDelete();
+                                                PlayStateHelper.isPlaying = false;
                                             }
                                         }else if (pos < mCurPos) {  //删除非当前播放音乐且位置小于当前播放音乐位置
                                             mCurPos--;
@@ -442,6 +445,7 @@ public class FileChooseFragment extends Fragment {
             Log.i("FileFragHandler", "startMusic");
             Message msgToService = Message.obtain();
             msgToService.what = PlayMusicService.START_MUSIC;
+            PlayStateHelper.isPlaying = true;
             try {
                 Log.i("startMusic()", "发送消息给service");
                 musicServiceMessenger.send(msgToService);
