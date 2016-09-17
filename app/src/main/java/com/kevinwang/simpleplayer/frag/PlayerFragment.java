@@ -27,6 +27,7 @@ import com.kevinwang.simpleplayer.activity.MainActivity;
 import com.kevinwang.simpleplayer.bean.MusicItem;
 import com.kevinwang.simpleplayer.bean.MusicLab;
 import com.kevinwang.simpleplayer.helper.PlayStateHelper;
+import com.kevinwang.simpleplayer.service.NotificationService;
 import com.kevinwang.simpleplayer.service.PlayMusicService;
 import com.kevinwang.simpleplayer.widget.MusicWidgetProvider;
 
@@ -186,6 +187,9 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                 intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
                 intent.putExtra("operation", 0); //0:play 1:pre 2:next
                 getActivity().sendBroadcast(intent);
+                intent = new Intent();
+                intent.setAction(NotificationService.UPDATE_NOTIFICATION);
+                getActivity().sendBroadcast(intent);
                 try {
                     Log.e("play_btn_operation", "向service发送消息-->RESUME_MUSIC");
                     musicServiceMessenger.send(msgToService);
@@ -200,6 +204,9 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
             Intent intent = new Intent();
             intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
             intent.putExtra("operation", 0); //0:play 1:pre 2:next
+            getActivity().sendBroadcast(intent);
+            intent = new Intent();
+            intent.setAction(NotificationService.UPDATE_NOTIFICATION);
             getActivity().sendBroadcast(intent);
             try {
                 musicServiceMessenger.send(msgToService);
@@ -413,9 +420,11 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                     switch (intent.getIntExtra("notification_operation", 0)) {  //4:next 5:pre 6:play
                         case 4:
                             Log.i("PlayReceiver", "onReceive, case next");
+                            updateFrag(musics, PlayStateHelper.getCurPos());
                             break;
                         case 5:
                             Log.i("PlayReceiver", "onReceive, case pre");
+                            updateFrag(musics, PlayStateHelper.getCurPos());
                             break;
                         case 6:
                             Log.i("PlayReceiver", "onReceive, case play");
@@ -482,6 +491,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                         }
 
                         sendBroadCastToWidget(data);
+                        updateNotification();
 
                         startMusic(musicServiceMessenger);
 
@@ -500,6 +510,7 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
                     }
 
                     sendBroadCastToWidget(data);
+                    updateNotification();
 
                     startMusic(musicServiceMessenger);
                     PlayStateHelper.setJustStart(false);
@@ -518,6 +529,12 @@ public class PlayerFragment extends Fragment implements View.OnClickListener {
             Intent intent = new Intent();
             intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
             intent.putExtra("operation", data.getInt(WHICH_BTN_CLICKED)); //0:play 1:pre 2:next
+            mContext.sendBroadcast(intent);
+        }
+
+        private void updateNotification() {
+            Intent intent = new Intent();
+            intent.setAction(NotificationService.UPDATE_NOTIFICATION);
             mContext.sendBroadcast(intent);
         }
 

@@ -33,6 +33,7 @@ import com.kevinwang.simpleplayer.activity.MainActivity;
 import com.kevinwang.simpleplayer.bean.MusicItem;
 import com.kevinwang.simpleplayer.bean.MusicLab;
 import com.kevinwang.simpleplayer.helper.PlayStateHelper;
+import com.kevinwang.simpleplayer.service.NotificationService;
 import com.kevinwang.simpleplayer.service.PlayMusicService;
 import com.kevinwang.simpleplayer.widget.MusicWidgetProvider;
 
@@ -129,6 +130,7 @@ public class FileChooseFragment extends Fragment {
                             }
                             PlayStateHelper.isPlaying = true;
                             updateWidget();
+                            updateNotification();
                             sendMusicPlayState(0);
                         }
                     }
@@ -143,6 +145,13 @@ public class FileChooseFragment extends Fragment {
         Intent intent = new Intent();
         intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
         intent.putExtra("operation", 2); //0:play 1:pre 2:next
+        mContext.sendBroadcast(intent);
+    }
+
+    private void updateNotification() {
+        Log.e(FILE_CHOOSER_FRAGMENT, "updateNotification");
+        Intent intent = new Intent();
+        intent.setAction(NotificationService.UPDATE_NOTIFICATION);
         mContext.sendBroadcast(intent);
     }
 
@@ -359,6 +368,7 @@ public class FileChooseFragment extends Fragment {
                                     sendMusicPlayState(2);
                                     sendMusicPlayState(3);
                                     updateWidget();
+                                    updateNotification();
                                 }
                             }).setNegativeButton("取消", null).create();
                     alertDialog.show();
@@ -418,6 +428,7 @@ public class FileChooseFragment extends Fragment {
                         PlayStateHelper.setJustStart(false);
                         sendMusicPlayState(0);
                         updateWidget();
+                        updateNotification();
                     } else {
                         Toast.makeText(mContext, "音乐不存在", Toast.LENGTH_SHORT).show();
                     }
@@ -426,6 +437,7 @@ public class FileChooseFragment extends Fragment {
                     Log.i("FileFragHandler", "response2");
                     if (data.getBoolean(PlayerFragment.SET_SRC_SUCCESS)) {
                         updateWidget();
+                        updateNotification();
                     } else {
                         Toast.makeText(mContext, "音乐不存在", Toast.LENGTH_SHORT).show();
                     }
@@ -434,6 +446,7 @@ public class FileChooseFragment extends Fragment {
                     Log.i("FileFragHandler", "response3");
                     if (data.getBoolean(PlayerFragment.SET_SRC_SUCCESS)) {
                         updateWidget();
+                        updateNotification();
                     } else {
                         Toast.makeText(mContext, "音乐不存在", Toast.LENGTH_SHORT).show();
                     }

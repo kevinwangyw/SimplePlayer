@@ -31,10 +31,10 @@ public class PlayMusicService extends Service {
     public static final int DELETE_WHILE_PLAYING = 5;
     public static final int WIDGET_UPDATE = 6;
     public static final int CUR_SONG_POS = 7;
+    public static final int UPDATE_PROGRESS = 8;
     public static final String PLAY_MUSIC_SERVICE = "PlayMusicService";
     public static final String SONG_CUR_POS = "songCurPos";
     public static final String SONG_LENGTH = "songLength";
-    public static final int UPDATE_PROGRESS = 8;
     private final IBinder mPlayBinder = new PlayBinder();
     private MediaPlayer mMediaPlayer;
     private boolean srcFound;
@@ -91,6 +91,26 @@ public class PlayMusicService extends Service {
                         }
                         try {
                             widgetMessenger.send(msgToWidget);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }else if(TextUtils.equals(data.getString(PlayerFragment.WHICH_COMPONENT), NotificationService.NOTIFICATION)){
+                        Messenger notificationMessenger = msg.replyTo;
+                        startMusic();
+                        PlayStateHelper.isPlaying = true;
+                        Message msgToNotification = Message.obtain();
+                        switch (data.getInt(PlayerFragment.WHICH_BTN_CLICKED)){
+                            case PlayerFragment.PLAY_BTN_CLICKED:
+                                break;
+                            case PlayerFragment.NEXT_BTN_CLICKED:
+                                msgToNotification.what =  NotificationService.HANDLER_NEXT;
+                                break;
+                            case PlayerFragment.PRE_BTN_CLICKED:
+                                msgToNotification.what = NotificationService.HANDLER_PRE;
+                                break;
+                        }
+                        try {
+                            notificationMessenger.send(msgToNotification);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         }

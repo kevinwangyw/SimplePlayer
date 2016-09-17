@@ -25,6 +25,7 @@ import com.kevinwang.simpleplayer.bean.MusicItem;
 import com.kevinwang.simpleplayer.bean.MusicLab;
 import com.kevinwang.simpleplayer.frag.PlayerFragment;
 import com.kevinwang.simpleplayer.helper.PlayStateHelper;
+import com.kevinwang.simpleplayer.service.NotificationService;
 import com.kevinwang.simpleplayer.service.PlayMusicService;
 
 import java.util.ArrayList;
@@ -80,7 +81,6 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         localBroadcastManager.registerReceiver(playReceiver, intentFilter);
 
         Intent broadCastIntent = new Intent();
-        broadCastIntent.setAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
 
         if (intent != null) {
             Log.i(MUSIC_WIDGET_PROVIDER,"onReceive()，intent = null : " + (intent == null));
@@ -161,9 +161,10 @@ public class MusicWidgetProvider extends AppWidgetProvider {
                     }
                     PlayStateHelper.isPlaying = false;
                 }
-
+                broadCastIntent.setAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
                 broadCastIntent.putExtra("widget_operation", 6);
                 localBroadcastManager.sendBroadcast(broadCastIntent);
+                updateNotification();
             }else if (TextUtils.equals(intent.getAction(), ACTION_BUTTON_NEXT)) {
                 Log.i(MUSIC_WIDGET_PROVIDER, "ACTION_BUTTON_NEXT");
                 if (PlayStateHelper.getCurPos() == -1) {
@@ -181,8 +182,10 @@ public class MusicWidgetProvider extends AppWidgetProvider {
                 PlayStateHelper.setJustStart(false);
                 PlayStateHelper.setPlayState(1);
                 requestSetMusicSrc(musicServiceMessenger, mMusics.get(PlayStateHelper.getCurPos()).getPath(), PlayerFragment.NEXT_BTN_CLICKED);
+                broadCastIntent.setAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
                 broadCastIntent.putExtra("widget_operation", 4);
                 localBroadcastManager.sendBroadcast(broadCastIntent);
+                updateNotification();
             }else if (TextUtils.equals(intent.getAction(), ACTION_BUTTON_PREV)) {
                 Log.i(MUSIC_WIDGET_PROVIDER, "ACTION_BUTTON_PREV");
                 if (PlayStateHelper.getCurPos() == -1) {
@@ -200,8 +203,10 @@ public class MusicWidgetProvider extends AppWidgetProvider {
                 PlayStateHelper.setJustStart(false);
                 PlayStateHelper.setPlayState(1);
                 requestSetMusicSrc(musicServiceMessenger, mMusics.get(PlayStateHelper.getCurPos()).getPath(), PlayerFragment.PRE_BTN_CLICKED);
+                broadCastIntent.setAction(PlayerFragment.PlayReceiver.UPDATE_FROM_WIDGET);
                 broadCastIntent.putExtra("widget_operation", 5);
                 localBroadcastManager.sendBroadcast(broadCastIntent);
+                updateNotification();
             }
         }
 
@@ -211,6 +216,12 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         ComponentName componentName = new ComponentName(context,MusicWidgetProvider.class);
         //更新appwidget
         appWidgetManager.updateAppWidget(componentName, mRemoteViews);
+    }
+
+    private void updateNotification() {
+        Intent intent = new Intent();
+        intent.setAction(NotificationService.UPDATE_NOTIFICATION);
+        mContext.sendBroadcast(intent);
     }
 
 
@@ -353,13 +364,11 @@ public class MusicWidgetProvider extends AppWidgetProvider {
                     intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
                     intent.putExtra("operation", 1); //0:play 1:pre 2:next
                     mContext.sendBroadcast(intent);
-                    mContext.sendBroadcast(intent);
                     break;
                 case NEXT_BTN:
                     intent = new Intent();
                     intent.setAction(MusicWidgetProvider.WIDGET_ACTION);
                     intent.putExtra("operation", 2); //0:play 1:pre 2:next
-                    mContext.sendBroadcast(intent);
                     mContext.sendBroadcast(intent);
                     break;
                 case UPDATE:

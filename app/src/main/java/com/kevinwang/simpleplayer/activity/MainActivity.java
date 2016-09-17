@@ -5,9 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Messenger;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -20,6 +22,7 @@ import com.kevinwang.simpleplayer.bean.MusicLab;
 import com.kevinwang.simpleplayer.frag.FileChooseFragment;
 import com.kevinwang.simpleplayer.frag.PlayerFragment;
 import com.kevinwang.simpleplayer.helper.PlayStateHelper;
+import com.kevinwang.simpleplayer.service.NotificationService;
 import com.kevinwang.simpleplayer.service.PlayMusicService;
 import com.kevinwang.simpleplayer.widget.MusicWidgetProvider;
 import com.viewpagerindicator.IconPagerAdapter;
@@ -34,7 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager mViewPager;
     private TabPagerAdapter mTabAdapter;
     private PlayMusicService.PlayBinder mPlayBinder;
-    private Intent mIntent;
+    private Intent playIntent;
+    private Intent notificationIntent;
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -50,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     public static Messenger musciServiceMessenger = null;
     private PlayerFragment.PlayReceiver mPlayReceiver;
     private MusicWidgetProvider mWidgetReceiver;
+    private NotificationService.NotificationReceiver mNotificationReceiver;
+    private SharedPreferences mSharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +63,13 @@ public class MainActivity extends AppCompatActivity {
         Log.i(MAIN_ACTIVITY, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        PlayStateHelper.setJustStart(true);
+        PlayStateHelper.setCurPos(mSharedPreferences.getInt(PlayerFragment.CURRENT_POS, -1));
+        PlayStateHelper.setMode(mSharedPreferences.getInt(PlayerFragment.PLAY_MODE, 0));     //3种模式 0:列表循环，1:单曲循环，2:随机播放
+        PlayStateHelper.setPlayState(0);  //0: 音乐未播放（图标显示play），1：正在播放（图标显示pause）
 
         mFragment = new Fragment[]{PlayerFragment.newInstance(), FileChooseFragment.newInstance(this)};
 
@@ -85,9 +98,20 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(MusicWidgetProvider.WIDGET_ACTION);
         registerReceiver(mWidgetReceiver, intentFilter);
 
-        mIntent = new Intent(this, PlayMusicService.class);
-        startService(mIntent);
-        bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE);
+        mNotificationReceiver = (new NotificationService()).new NotificationReceiver();
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(NotificationService.NOTIFICATION_IMG);
+        intentFilter.addAction(NotificationService.NOTIFICATION_PLAY);
+        intentFilter.addAction(NotificationService.NOTIFICATION_NEXT);
+        intentFilter.addAction(NotificationService.NOTIFICATION_PREV);
+        intentFilter.addAction(NotificationService.UPDATE_NOTIFICATION);
+        registerReceiver(mNotificationReceiver, intentFilter);
+
+        playIntent = new Intent(this, PlayMusicService.class);
+        startService(playIntent);
+        bindService(playIntent, mConnection, Context.BIND_AUTO_CREATE);
+        notificationIntent = new Intent(this, NotificationService.class);
+        startService(notificationIntent);
         Log.i("after bindService", "musciServiceMessenger == null is " + (musciServiceMessenger == null));
     }
 
@@ -146,11 +170,13 @@ public class MainActivity extends AppCompatActivity {
 
             //mPlayMusicService.stopMusic();
         }
-        stopService(mIntent);
+        stopService(playIntent);
+        stopService(notificationIntent);
         this.unbindService(mConnection);
 
         unregisterReceiver(mPlayReceiver);
         unregisterReceiver(mWidgetReceiver);
+        unregisterReceiver(mNotificationReceiver);
     }
 
     public static Messenger getMusicServiceMessenger() {
